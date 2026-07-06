@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-mother: #c34670;
+  --color-mother-soft: #e8a9be;
+  --color-mother-deep: #8f2f52;
+
+  --color-father: #2e6e8e;
+  --color-father-soft: #9cc7db;
+  --color-father-deep: #1f4d63;
+
+  --color-legacy: #b68a2e;
+  --color-legacy-soft: #ecd9a8;
+}
+
+:root {
+  --bg: #eef0f4;
+  --bg-elevated: #ffffff;
+  --ink: #14131c;
+  --ink-soft: #4a4959;
+  --line: #d8d6e0;
+  --shadow-color: 220 20% 40%;
+}
+
+.dark {
+  --bg: #121119;
+  --bg-elevated: #191826;
+  --ink: #ece9f2;
+  --ink-soft: #a7a4b8;
+  --line: #2c2a3a;
+  --shadow-color: 250 40% 2%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+::selection {
+  background-color: var(--color-legacy-soft);
+  color: var(--color-legacy-deep, #3a2b0c);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.surface {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--line);
+}
+
+.text-ink {
+  color: var(--ink);
+}
+.text-ink-soft {
+  color: var(--ink-soft);
+}
+.border-hairline {
+  border-color: var(--line);
+}
+.bg-canvas {
+  background-color: var(--bg);
+}
+.bg-elevated {
+  background-color: var(--bg-elevated);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-legacy);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rise {
+  animation: rise-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes grow-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.animate-grow {
+  animation: grow-bar 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: inherit;
+}
