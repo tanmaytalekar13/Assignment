@@ -1,22 +1,21 @@
-// Core calculation engine for the Parental Legacy & Life Factors Calculator.
+// The math behind the calculator.
 //
-// Design of the algorithm
-// ------------------------
-// 1. Every factor has a documented [min, max] range. A deterministic pseudo
-//    random value (seeded from the date of birth) is drawn inside that range
-//    for each factor, so the same date of birth always produces the same
-//    result (required by "auto-calculation on date selection").
-// 2. Those seven raw values are scaled so that they always sum to exactly
-//    100 - this is the "Grand Total" rule.
-// 3. Each factor's total is then split between Mother and Father. The parent
-//    favoured by the day-of-birth parity (odd day -> mother, even day ->
-//    father) receives a deterministic majority share of every factor, the
-//    remainder goes to the other parent as an exact complement
-//    (father = total - mother), so Mother + Father = Total is never
-//    approximate.
-// Because every factor's Mother/Father split is an exact complement of its
-// Total, and every factor's Total is an exact fraction of 100, it follows
-// mathematically that sum(Mother) + sum(Father) = 100 for any valid date.
+// Problem: the brief gives a min/max range per factor, but those ranges
+// don't sum to 100 (add up all the maxes and you get ~54, all the mins and
+// you get ~47). So the ranges are treated as a starting point, not a final
+// answer, and get normalized down to 100. Steps:
+//
+// 1. Pull one value per factor from inside its range, using a PRNG seeded
+//    off the date of birth so the same date always gives the same result.
+// 2. Scale all seven values so they add up to exactly 100.
+// 3. Split each factor between Mother and Father. Odd day of birth favours
+//    Mother, even day favours Father (per the brief). The favoured side gets
+//    a random-ish edge, and the other side is just `total - mother` so the
+//    two numbers can never drift apart from a rounding error.
+//
+// Because of #3, every factor's mother+father equals its total exactly,
+// which means the two grand totals add up to 100 automatically - no extra
+// correction step needed anywhere.
 
 export const FACTORS = [
   { key: "geneticInheritance", label: "Genetic Inheritance", min: 9.333, max: 10.777 },
@@ -28,7 +27,7 @@ export const FACTORS = [
   { key: "soulConnections", label: "Soul Connections", min: 5.111, max: 6.222 },
 ];
 
-/** Simple, dependency-free string hash (djb2) used to seed the PRNG. */
+// djb2 string hash - just need something quick to turn a date string into a seed
 function hashString(str) {
   let hash = 5381;
   for (let i = 0; i < str.length; i += 1) {
@@ -37,7 +36,7 @@ function hashString(str) {
   return hash >>> 0;
 }
 
-/** Mulberry32 - small, fast, deterministic PRNG. Returns a fn producing [0,1). */
+// Mulberry32 PRNG - small, fast, good enough for this. Returns a fn producing [0,1).
 function mulberry32(seed) {
   let a = seed;
   return function random() {

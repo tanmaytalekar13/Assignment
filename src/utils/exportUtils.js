@@ -1,6 +1,7 @@
 import { saveAs } from "file-saver";
-// jsPDF and its autotable plugin are only needed when a user exports a PDF,
-// so they're loaded on demand (dynamic import) to keep the initial bundle small.
+// jsPDF drags in html2canvas and is fairly big, so it's dynamically imported
+// inside exportToPDF instead of at the top of the file - keeps it out of the
+// main bundle until someone actually clicks "Export PDF".
 
 export function exportToCSV(result) {
   const rows = [

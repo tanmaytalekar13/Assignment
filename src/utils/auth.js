@@ -1,17 +1,14 @@
-// Lightweight, client-only authentication.
-//
-// There is no backend in this project (the assessment brief marks backend
-// and database as optional), so this module simulates a JWT-based auth flow
-// entirely in the browser: accounts are hashed with SHA-256 (Web Crypto)
-// and stored in localStorage, and "tokens" are structured exactly like a
-// real JWT (base64url header.payload.signature) so the shape of the flow
-// mirrors a production setup. This is intentionally NOT secure enough for
-// a real product - see the README "Authentication" section for how this
-// would be swapped for a real Express + JWT backend.
+// No backend for this project, so auth happens entirely in the browser.
+// Passwords get hashed with SHA-256 (Web Crypto), accounts live in
+// localStorage, and login gives back a JWT-shaped token (base64url
+// header.payload.signature) so the flow looks and feels like real JWT auth.
+// Obviously there's no server to check that signature against, so this
+// isn't something you'd trust with real user data - it's here to cover the
+// "JWT auth" bonus item. README has more on how this would move server-side.
 
 const USERS_KEY = "lineage-ledger:users";
 const SESSION_KEY = "lineage-ledger:session";
-const DEMO_SECRET = "lineage-ledger-demo-secret"; // demo only, never do this in production
+const DEMO_SECRET = "lineage-ledger-demo-secret"; // fine for a demo, not for anything real
 
 function base64url(input) {
   return btoa(unescape(encodeURIComponent(input))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");

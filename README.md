@@ -1,224 +1,147 @@
-# Lineage Ledger — Parental Legacy & Life Factors Calculator
+# Lineage Ledger
 
-A React + Vite web app that takes a **Date of Birth** and instantly calculates how
-seven foundational "life factors" split between a Mother line and a Father line —
-with the two always summing to a **Grand Total of exactly 100**.
+Parental Legacy & Life Factors Calculator — built for the Neutrino Veda MERN
+assessment.
 
-Built for the Neutrino Veda MERN Full Stack Developer assessment.
+You put in a date of birth, and it works out how 7 "life factors" split
+between a Mother side and a Father side. The two always add up to exactly
+100, per the brief.
 
----
+## Repo / demo
 
-## Live demo & repo
+- Repo: _add your GitHub link here once you push_
+- Live: _add your Vercel/Netlify link here once deployed_
 
-- Repository: _add your GitHub URL here after pushing_
-- Deployed app: _add your Vercel / Netlify URL here after deploying_
+## What's in it
 
----
+Everything asked for in the task doc:
 
-## Features
+- Date of birth picker, validated (no future dates, nothing before 1900)
+- Results calculate the moment you pick a date, no submit button
+- Mother / Father / Total for each of the 7 factors
+- Mother total, Father total, and a Grand Total that's always 100
+- A banner telling you which parent's line is higher, and by how much
+- A bar chart (mother vs father per factor) and a donut chart (overall split)
+- Responsive — tested down to a small phone width
 
-### Core requirements
-- **Date of Birth input** using a native `<input type="date">`, with validation
-  (rejects empty, invalid, and future dates, and dates before 1900).
-- **Auto-calculation** — results are generated the instant a valid date is chosen,
-  no submit button required.
-- **Mother / Father / Total** shown for each of the 7 life factors:
-  Genetic Inheritance, Constitutional Vitality, Mental Patterns, Intellectual
-  Capacity, Emotional Foundation, Spiritual Lineage, Soul Connections.
-- **Mother Total, Father Total and Grand Total (= 100)** displayed as stat cards.
-- **Dominant parent banner** — clearly states which parent's line carries the
-  higher overall legacy value, and by how much.
-- **Charts** — a grouped bar chart (Mother vs Father per factor) and a donut
-  chart (share of the grand total), built with Recharts.
-- **Responsive design** — works from small phones to desktop, built with
-  Tailwind CSS.
+And the bonus stuff, all of it:
 
-### Bonus features implemented
-| Feature | Status |
-|---|---|
-| Export results as PDF | ✅ (`jsPDF` + `jspdf-autotable`) |
-| Export results as CSV | ✅ |
-| Dark / Light mode toggle | ✅ (persisted, respects system preference) |
-| Save results (localStorage) | ✅ (per-user history, up to 25 entries) |
-| User authentication (JWT-style) | ✅ (demo — see [Authentication](#authentication) below) |
+- CSV export
+- PDF export (jsPDF, loaded lazily so it doesn't bloat the initial bundle)
+- Dark/light toggle, remembers your choice
+- Save results — stored in localStorage, per account
+- Login/signup with JWT-style tokens (more on this below, it's client-only)
 
----
+## The actual math
 
-## Calculation logic
+This was the annoying part. The brief gives a min/max range for each factor,
+but if you just add up all the maximums you get ~54, and all the minimums
+you get ~47 — nowhere near 100. So the ranges can't be literal totals, they
+have to be more like a starting point that gets normalized.
 
-The brief only gives a **range** per factor and two rules:
+Here's what I went with (`src/utils/calculator.js`):
 
-1. `Mother + Father = Total` for every factor.
-2. `sum(Mother) + sum(Father) = 100`.
+1. Hash the date of birth, feed it into a small seeded PRNG, and pull one
+   value per factor from inside its min/max range. Same date always gives
+   the same numbers — needed this for it to feel deterministic rather than
+   "refresh and get a new answer."
+2. Scale all 7 values so they add up to exactly 100. Round to 3 decimals,
+   and stick any leftover rounding difference onto the last factor so the
+   grand total never shows up as 99.999 or 100.001.
+3. Split each factor between the two parents. Odd day of birth → mother gets
+   the bigger half, even day → father does, matching the brief. The winning
+   side gets a random-ish edge somewhere between 6-15%, and the other side
+   is just `total - mother`, not its own separate calculation — that way the
+   two numbers can never drift apart from the total by a rounding error.
 
-Since the sum of the seven documented ranges does not naturally add up to 100,
-the app derives a deterministic value per factor and then scales it, as follows
-(see `src/utils/calculator.js`):
+Because of step 3, `mother + father = total` is exact for every single
+factor, which means the two grand totals also add up to exactly 100 without
+any extra correction needed. Worked through a handful of test dates by hand
+to make sure this actually holds, it does.
 
-1. **Deterministic draw** — the date of birth is hashed and fed into a seeded
-   PRNG (Mulberry32), which draws one value per factor **inside its documented
-   min–max range**. Same date of birth → same result, every time.
-2. **Scale to 100** — the seven raw values are scaled so they sum to exactly
-   100, then rounded to 3 decimals (the small rounding remainder is folded into
-   the last factor so the grand total is never `99.999` or `100.001`).
-3. **Split Mother / Father** — the day of the month decides which parent is
-   favoured (odd day → Mother, even day → Father, per the brief). Each factor
-   gets a deterministic 6–15% edge toward the favoured parent; the other
-   parent's value is the **exact complement** (`father = total - mother`), so
-   the two rules above hold exactly for every date, with no floating-point
-   drift.
+## About the login
 
-This keeps the app fully deterministic and reproducible (a requirement implied
-by "auto-calculation on date selection") while still respecting every stated
-constraint.
+The task says backend/DB are optional, so there's no real server here —
+auth is done entirely in the browser. Passwords get hashed with SHA-256
+(Web Crypto, built into the browser), and a JWT-shaped token gets stored in
+localStorage after login. It looks and behaves like real JWT auth, but
+there's no server to actually verify a signature against, so don't treat
+this as secure — it's here to hit the "JWT auth" bonus point, not to protect
+real accounts. If this became a real product, the obvious next step is
+moving `src/utils/auth.js`'s logic into an Express route and issuing real
+signed tokens server-side.
 
----
+## Stack
 
-## Authentication
+- Vite + React 19 (hooks, no class components)
+- Tailwind v4
+- Recharts for the charts
+- lucide-react for icons
+- jsPDF + jspdf-autotable for the PDF, file-saver for CSV
+- Context API for theme + auth state — didn't feel like this needed Redux
+- localStorage for everything else (history, accounts, session, theme)
 
-The brief marks backend/database as **optional**, so this project ships a
-fully client-side, demo-grade auth flow instead of standing up an Express
-server:
-
-- Passwords are hashed with SHA-256 via the browser's Web Crypto API.
-- A JWT-shaped token (`header.payload.signature`, base64url encoded) is issued
-  on login/signup and stored in `localStorage`.
-- Accounts and sessions never leave the browser.
-
-This is **not** production security (there's no server to verify the signature
-against, and the "secret" lives in client code) — it exists to demonstrate the
-JWT-based auth flow requested in the bonus section. See
-`src/utils/auth.js` for the implementation and a note on how it would be
-swapped for a real Node/Express + `jsonwebtoken` backend.
-
----
-
-## Tech stack
-
-| Layer | Choice |
-|---|---|
-| Build tool | Vite 8 |
-| Framework | React 19 (functional components + hooks only) |
-| Styling | Tailwind CSS 4 (`@tailwindcss/vite`), custom design tokens |
-| Charts | Recharts |
-| Icons | lucide-react |
-| PDF export | jsPDF + jspdf-autotable (lazy-loaded on demand) |
-| CSV export | Hand-rolled CSV writer + file-saver |
-| State | React hooks + Context API (`ThemeContext`, `AuthContext`) — no Redux needed for this scope |
-| Persistence | `localStorage` (results history, accounts, theme, session) |
-
----
-
-## Project structure
+## Folder layout
 
 ```
 src/
-  components/       Presentational + interactive components (one concern each)
-  context/           ThemeContext (dark/light) and AuthContext (mock JWT auth)
-  hooks/             useCountUp — animated number reveal
+  components/     one component per concern — form, charts, cards, panels
+  context/        ThemeContext, AuthContext
+  hooks/          useCountUp (the number tick-up animation on the stat cards)
   utils/
-    calculator.js    Core deterministic calculation engine (pure functions, unit-testable)
-    exportUtils.js   CSV / PDF export
-    storage.js       localStorage-backed results history
-    auth.js          Demo JWT-style authentication
-  App.jsx            Top-level layout & state orchestration
-  main.jsx           React entry point
-  index.css          Design tokens (colors, type, motion) + Tailwind import
+    calculator.js   the actual math, no React/DOM in here at all
+    exportUtils.js  CSV + PDF
+    storage.js      localStorage history helpers
+    auth.js         the demo auth described above
+  App.jsx
+  main.jsx
+  index.css       colors/fonts/tokens + tailwind import
 ```
 
-The calculation engine in `utils/calculator.js` has no dependency on React or
-the DOM — it's a set of pure functions, which makes it straightforward to unit
-test or reuse (e.g. from a future Node/Express API) without change.
+Kept `calculator.js` free of any React or browser dependency on purpose —
+it's just plain functions, so you could copy it into a real backend later
+without touching it.
 
----
+## Running it
 
-## Getting started
-
-### Prerequisites
-- Node.js 18+ and npm
-
-### Install & run locally
+Needs Node 18+.
 
 ```bash
-git clone <your-repo-url>
-cd legacy-calculator
 npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
-
-### Build for production
+Opens on `http://localhost:5173`.
 
 ```bash
-npm run build
-npm run preview   # serve the production build locally to sanity-check it
-```
-
-### Lint
-
-```bash
+npm run build     # production build
+npm run preview   # serve that build locally to double check it
 npm run lint
 ```
 
----
+## Deploying
 
-## Deployment
+It's a static build, no server required, so any of these work fine:
 
-This is a static single-page app (no required backend), so it deploys cleanly
-to any static host:
+**Vercel** — `vercel` (after `npm i -g vercel`), follow the prompts.
 
-**Vercel**
-```bash
-npm i -g vercel
-vercel
-```
+**Netlify** — `npm run build`, then drag the `dist` folder onto
+app.netlify.com/drop, or `netlify deploy --prod --dir=dist`.
 
-**Netlify**
-```bash
-npm run build
-# drag-and-drop the generated dist/ folder onto app.netlify.com/drop
-# or: netlify deploy --prod --dir=dist
-```
+**GitHub Pages** — `npm run build`, push `dist` to a `gh-pages` branch (the
+`gh-pages` npm package makes this a one-liner if you don't want to do it by
+hand).
 
-**GitHub Pages**
-```bash
-npm run build
-# publish the dist/ folder to a gh-pages branch, e.g. using the gh-pages package
-```
+## A note on the design
 
----
+Went with two colors that actually mean something rather than being random
+accents — a deep rose for Mother and a steel blue for Father, used
+consistently everywhere (charts, badges, the balance bars). Each factor row
+is a single bar split at the real mother/father ratio, so the bar itself
+is the data, not just decoration next to the numbers.
 
-## Design notes
-
-The visual direction is built around the subject itself — two intertwined
-lines of inheritance:
-
-- **Mother** is represented by a deep rose (`#c34670`), **Father** by a deep
-  steel blue (`#2e6e8e`), used consistently across every chart, bar and badge
-  so the color coding is learned once and reused everywhere.
-- Each factor is shown as a **balance bar** — a single bar split at the exact
-  Mother/Father ratio — so the layout itself encodes the data, not just the
-  numbers next to it.
-- Headings use **Fraunces** (a warm, editorial serif, fitting a "ledger of
-  inheritance"); body copy uses **Manrope**; all calculated numbers use
-  **JetBrains Mono** with tabular figures, so values align cleanly in columns.
-- Motion is limited to one entrance sequence and a number count-up on
-  calculation; `prefers-reduced-motion` is respected throughout.
-
----
-
-## Evaluation checklist (self-assessment against the brief)
-
-- [x] DOB input with validation
-- [x] Auto-calculation on date selection
-- [x] Mother / Father / Total shown per factor
-- [x] Mother Total, Father Total, Grand Total (= 100, exactly)
-- [x] Dominant parent indicator
-- [x] Charts (bar + donut)
-- [x] Responsive design
-- [x] CSV export
-- [x] PDF export
-- [x] Dark / light mode
-- [x] Save results (localStorage, per-user)
-- [x] JWT-style authentication (client-side demo)
+Headings are set in Fraunces (wanted something with a bit of warmth, given
+the "ledger of inheritance" framing), body text is Manrope, and all the
+calculated numbers use JetBrains Mono so they line up cleanly in columns.
+Animation is kept to one entrance sequence plus the number count-up —
+`prefers-reduced-motion` is respected.
