@@ -119,18 +119,6 @@ npm run preview   # serve that build locally to double check it
 npm run lint
 ```
 
-## Deploying
-
-It's a static build, no server required, so any of these work fine:
-
-**Vercel** — `vercel` (after `npm i -g vercel`), follow the prompts.
-
-**Netlify** — `npm run build`, then drag the `dist` folder onto
-app.netlify.com/drop, or `netlify deploy --prod --dir=dist`.
-
-**GitHub Pages** — `npm run build`, push `dist` to a `gh-pages` branch (the
-`gh-pages` npm package makes this a one-liner if you don't want to do it by
-hand).
 
 ## A note on the design
 
